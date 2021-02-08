@@ -1,4 +1,4 @@
-%% denso Snake dual quaternion representation controlled by Adaptive MPC
+%% denso dual quaternion representation controlled by Adaptive MPC
 close all;
 clear all;
 clear classes;
@@ -88,9 +88,9 @@ end
 %% Defining setpoint
 % position = [16, 0, 7];
 % position = [15, 0, 2];
-position = [0.2, 0, 0.4];
+position = [0.4, 0, 0.2];
 
-phi = pi/2;
+phi = pi;
 %phi = 0;
 
 n_vec = [0, 1, 0];
@@ -99,14 +99,7 @@ n_vec = n_vec/norm(n_vec);
 
 n = DQ([0, n_vec(1), n_vec(2), n_vec(3)]);
 
-theta1 = atan2(position(2), position(1));
-rz = cos(theta1/2) + sin(theta1/2)*DQ([0, 0, 0, 1]);
-
-ry = cos(pi/4) + sin(pi/4)*DQ([0, 0, 1, 0]); % Approach-Sliding-Normal rotation
-
 r = cos(phi/2) + sin(phi/2)*n;
-
-r = ry * r;
 
 p = DQ([0, position(1), position(2), position(3)]);
 
