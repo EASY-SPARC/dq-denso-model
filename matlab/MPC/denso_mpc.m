@@ -7,7 +7,7 @@ clc;
 %% Create a new DQ_kinematics object with standard Denavit-Hartenberg parameters           
 denso = DQ_DENSO;
 
-theta = [0, 0, -pi/2, 0, 0, 0]';
+theta = [0, 0, 0, 0, 0, 0]';
 xm = denso.fkm(theta);
 
 figure;
@@ -49,7 +49,7 @@ plant.OutputName = {'a1', 'b1', 'c1', 'd1', 'a2', 'b2', 'c2', 'd2', 'theta1', 't
 % Create MPC controller
 mpcobj = mpc(plant);
 % Specify prediction horizon
-mpcobj.PredictionHorizon = 20;
+mpcobj.PredictionHorizon = 40;
 % Specify control horizon
 mpcobj.ControlHorizon = 2;
 
@@ -67,14 +67,14 @@ for k = 1:14
 end
 
 % Set weights so that x is controlled and theta can float
-mpcobj.Weights.OV = [ones(1, 8), zeros(1, 6)];
+mpcobj.Weights.OV = [10*ones(1, 8), zeros(1, 6)];
 
-%mpcobj.Weights.ManipulatedVariablesRate = [0.4, 0.4, 0.4, 0.4, 0.4];
+%mpcobj.Weights.ManipulatedVariablesRate = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1];
 
 % Specify Physical constraints for OV
 for k = 1:6
-    mpcobj.MV(k).Min = -pi/6;
-    mpcobj.MV(k).Max = pi/6;
+    mpcobj.MV(k).Min = -(pi/6)*10;
+    mpcobj.MV(k).Max = (pi/6)*10;
 end
 for k = 1:8
     mpcobj.OV(k).Min = -Inf;
@@ -88,7 +88,7 @@ end
 %% Defining setpoint
 % position = [16, 0, 7];
 % position = [15, 0, 2];
-position = [0.4, 0, 0.2];
+position = [0.2, 0, 0.2];
 
 phi = pi;
 %phi = 0;
@@ -106,7 +106,7 @@ p = DQ([0, position(1), position(2), position(3)]);
 xd = r + 1/2 * DQ.E * p * r;
 
 %% Computing setpoint trajectory
-setting_time = 3;
+setting_time = 5;
 
 setpoint = zeros(14, setting_time/Ts); 
 for k = 1:setting_time/Ts
