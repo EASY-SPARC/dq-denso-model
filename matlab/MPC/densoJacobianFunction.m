@@ -1,7 +1,9 @@
-function [outputArg1,outputArg2] = densoJacobianFunction(inputArg1,inputArg2)
+function [A,Bmv] = densoJacobianFunction(x,u)
 %DENSOJACOBIANFUNCTION Summary of this function goes here
 %   Detailed explanation goes here
-outputArg1 = inputArg1;
-outputArg2 = inputArg2;
+denso = DQ_DENSO;
+
+A = zeros(14, 14);
+Bmv = [denso.jacobian(x(9:14)); eye(6)];
 end
 
