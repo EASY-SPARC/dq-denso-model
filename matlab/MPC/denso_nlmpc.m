@@ -3,9 +3,9 @@ ny = 14;
 nu = 6;
 nlobj = nlmpc(nx,ny,nu);
 
-Ts = 0.5;
-p = 20;
-c = 20;
+Ts = 0.1;
+p = 40;
+c = 5;
 nlobj.Ts = Ts;
 nlobj.PredictionHorizon = p;
 nlobj.ControlHorizon = c;
@@ -13,15 +13,25 @@ nlobj.ControlHorizon = c;
 nlobj.Model.StateFcn = "densoStateFunction";
 nlobj.Jacobian.StateFcn = "densoJacobianFunction";
 
-nlobj.Weights.OutputVariables = [1*ones(1, 8), zeros(1, 6)];
+nlobj.Weights.OutputVariables = [ones(1, 8), zeros(1, 6)];
 
 % nloptions = nlmpcmoveopt;
 % nloptions.Parameters = {Ts};
 % nlobj.Model.NumberOfParameters = 1;
 
+for ct = 1:nu
+    nlobj.MV(ct).Min = -(pi/6)*10;
+    nlobj.MV(ct).Max =  (pi/6)*10;
+end
+
+for ct = 9:ny
+    nlobj.OV(ct).Min = -pi/2;
+    nlobj.OV(ct).Max =  pi/2;
+end
+
 denso = DQ_DENSO;
 
-theta = [0, 0, 0, 0, 0, 0]';
+theta = [0, 0, -pi/2, 0, 0, 0]';
 xm = denso.fkm(theta);
 x0 = [vec8(xm); theta];
 u0 = [0, 0, 0, 0, 0, 0]';
@@ -66,16 +76,21 @@ data = [vec8(xm)', theta'];
 dtheta = zeros(6, 1);
 
 k = 1;
-while (k < setting_time/Ts)    
 
-    x = x + densoStateFunction(x, dtheta)*Ts
+options = nlmpcmoveopt;
+
+while (k < setting_time/Ts)
     
-    [~, ~, info] = nlmpcmove(nlobj, x, dtheta, setpoint(:, k:k+nlobj.PredictionHorizon)', [])
+    [~, ~, info] = nlmpcmove(nlobj, x, dtheta, setpoint(:, k:k+nlobj.PredictionHorizon)', [], options);
+%     [~, ~, info] = nlmpcmove(nlobj, x, dtheta, kron(ones(nlobj.PredictionHorizon,1),setpoint(:, end)'), []);
 %     dtheta = nlmpcmove(nlobj, x, dtheta, setpoint(:, k:k+nlobj.PredictionHorizon)', [], nloptions)
 %     disp(setpoint(:, k:k+nlobj.PredictionHorizon)');
 
     dtheta = info.MVopt(1,:)'
     theta = theta + dtheta * Ts;
+    
+%     x = x + densoStateFunction(x, dtheta)*Ts
+    x = [vec8(denso.fkm(theta)); theta];
 
     plot(denso, theta');
     drawnow;
