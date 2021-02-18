@@ -4,6 +4,10 @@ function [z] = densoStateFunction(x,u)
 denso = DQ_DENSO;
 
 z = zeros(14,1);
+
+% disp(denso.jacobian(x(9:14)));
+% disp(u);
+
 quaternions = denso.jacobian(x(9:14))*u; % seria denso.fkm(theta);?
 z(1) = quaternions(1);
 z(2) = quaternions(2);
