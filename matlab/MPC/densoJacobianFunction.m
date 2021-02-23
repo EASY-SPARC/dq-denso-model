@@ -1,4 +1,4 @@
-function [A,Bmv] = densoJacobianFunction(x,u)
+function [A,Bmv] = densoJacobianFunction(x,u, Ts)
 %DENSOJACOBIANFUNCTION Summary of this function goes here
 %   Detailed explanation goes here
 denso = DQ_DENSO;

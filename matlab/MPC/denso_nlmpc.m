@@ -3,25 +3,28 @@ ny = 14;
 nu = 6;
 nlobj = nlmpc(nx,ny,nu);
 
-Ts = 0.1;
-p = 40;
+Ts = 0.5;
+p = 20;
 c = 5;
 nlobj.Ts = Ts;
 nlobj.PredictionHorizon = p;
 nlobj.ControlHorizon = c;
 
 nlobj.Model.StateFcn = "densoStateFunction";
+nlobj.Model.IsContinuousTime = true;
+nlobj.Model.NumberOfParameters = 1;
+
+
 nlobj.Jacobian.StateFcn = "densoJacobianFunction";
 
-nlobj.Weights.OutputVariables = [ones(1, 8), zeros(1, 6)];
 
-% nloptions = nlmpcmoveopt;
-% nloptions.Parameters = {Ts};
-% nlobj.Model.NumberOfParameters = 1;
+nlobj.Weights.OutputVariables = [ones(1, 8), zeros(1, 6)];
+nlobj.Weights.ManipulatedVariablesRate = [0*ones(1, 6)];
+
 
 for ct = 1:nu
-    nlobj.MV(ct).Min = -(pi/6)*10;
-    nlobj.MV(ct).Max =  (pi/6)*10;
+    nlobj.MV(ct).Min = -pi/6;
+    nlobj.MV(ct).Max =  pi/6;
 end
 
 for ct = 9:ny
@@ -36,7 +39,7 @@ xm = denso.fkm(theta);
 x0 = [vec8(xm); theta];
 u0 = [0, 0, 0, 0, 0, 0]';
 
-validateFcns(nlobj,x0,u0);
+validateFcns(nlobj,x0,u0, [], {Ts});
 
 %% Defining setpoint
 position = [0.2, 0, 0.2];
@@ -71,23 +74,31 @@ end
 %% Closed loop control law
 
 x = x0;
+y = x;
 data = [vec8(xm)', theta'];
 
 dtheta = zeros(6, 1);
 
 k = 1;
 
-options = nlmpcmoveopt;
+mv = zeros(1,6);
+
+nloptions = nlmpcmoveopt;
+nloptions.Parameters = {Ts};
 
 while (k < setting_time/Ts)
     
-    [~, ~, info] = nlmpcmove(nlobj, x, dtheta, setpoint(:, k:k+nlobj.PredictionHorizon)', [], options);
-%     [~, ~, info] = nlmpcmove(nlobj, x, dtheta, kron(ones(nlobj.PredictionHorizon,1),setpoint(:, end)'), []);
+%     [mv, nloptions, info] = nlmpcmove(nlobj, x, dtheta', setpoint', [], nloptions);
+    [mv, nloptions, info] = nlmpcmove(nlobj, x, mv, setpoint(:, k+1:k+nlobj.PredictionHorizon)', [], nloptions);
+%     [mv, ~, info] = nlmpcmove(nlobj, x, dtheta, kron(ones(nlobj.PredictionHorizon,1),setpoint(:, end)'), []);
+%     mv = nlmpcmove(nlobj, x, dtheta, kron(ones(nlobj.PredictionHorizon,1),setpoint(:, end)'), []);
 %     dtheta = nlmpcmove(nlobj, x, dtheta, setpoint(:, k:k+nlobj.PredictionHorizon)', [], nloptions)
 %     disp(setpoint(:, k:k+nlobj.PredictionHorizon)');
 
     dtheta = info.MVopt(1,:)'
-    theta = theta + dtheta * Ts;
+%     dtheta = mv
+    mv
+    theta = theta + dtheta * Ts
     
 %     x = x + densoStateFunction(x, dtheta)*Ts
     x = [vec8(denso.fkm(theta)); theta];
