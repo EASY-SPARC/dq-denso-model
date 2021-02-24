@@ -1,4 +1,4 @@
-function [z] = densoStateFunction(x,u, Ts)
+function [z] = densoStateFunction(x,u)
 %DENSOSTATEFUNCTION Summary of this function goes here
 %   Detailed explanation goes here
 denso = DQ_DENSO;
