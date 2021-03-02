@@ -5,8 +5,8 @@ nlobj = nlmpc(nx,ny,nu);
 
 %% MPC Parameters
 Ts = 0.1;
-p = 40;
-c = 10;
+p = 10;
+c = 4;
 nlobj.Ts = Ts;
 nlobj.PredictionHorizon = p;
 nlobj.ControlHorizon = c;
@@ -23,15 +23,15 @@ nlobj.Weights.ManipulatedVariablesRate = [0*ones(1, 6)];
 nlmpcobj.Optimization.UseSuboptimalSolution = 1;
 
 %% Constraints
-% for ct = 1:nu
-%     nlobj.MV(ct).Min = -pi;
-%     nlobj.MV(ct).Max =  pi;
-% end
-% 
-% for ct = 9:ny
-%     nlobj.OV(ct).Min = -pi;
-%     nlobj.OV(ct).Max =  pi;
-% end
+for ct = 1:nu
+    nlobj.MV(ct).Min = -pi;
+    nlobj.MV(ct).Max =  pi;
+end
+
+for ct = 9:ny
+    nlobj.OV(ct).Min = -pi;
+    nlobj.OV(ct).Max =  pi;
+end
 
 %% Denso definition, by DQ Robotics
 denso = DQ_DENSO;
@@ -85,6 +85,7 @@ k = 1;
 
 mv = zeros(1,6);
 
+hbar = waitbar(0,'Simulation Progress');
 while (k <= setting_time/Ts)
     
     [mv, ~, info] = nlmpcmove(nlobj, x, dtheta, setpoint(:, k+1:k+nlobj.PredictionHorizon)', []);
@@ -94,12 +95,14 @@ while (k <= setting_time/Ts)
     
     x = [vec8(denso.fkm(theta)); theta];
     
-    plot(denso, theta');
-    drawnow;
+%     plot(denso, theta');
+%     drawnow;
     
     k = k+1;
     
     data = [data; x'];
+    
+    waitbar(k/(setting_time/Ts), hbar);
 end
 
 %% Plotting performance
@@ -114,6 +117,7 @@ elseif k > size(setpoint, 2)
 end
 
 % setpoint = [x0 setpoint];
+drawnow;
 
 subplot(4, 2, 1);
 plot(t, data(:, 1));
