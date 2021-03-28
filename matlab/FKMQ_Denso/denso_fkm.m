@@ -37,3 +37,32 @@ end
 % x3 = hemi(r_z_theta4)*r_x_alpha4;
 % x4 = hemi(r_z_theta5)*r_x_alpha5;
 % x5 = hemi(r_z_theta6)*r_x_alpha6;
+
+x_0_i = x(:,1);
+
+for i = 2:6
+    x_0_i = [x_0_i hemi(x_0_i(:,i-1))*x(:,i)];
+end
+
+% x_0_1 = x(:,1);
+% x_0_2 = hemi(x_0_1)*x(:,2);
+% x_0_3 = hemi(x_0_2)*x(:,3);
+% x_0_4 = hemi(x_0_3)*x(:,4);
+% x_0_5 = hemi(x_0_4)*x(:,5);
+% x_0_6 = hemi(x_0_5)*x(:,6);
+
+z = [];
+j = [];
+k_hat = [0;0;0;1];
+
+for i = 1:6
+    conj_x_0_i = x_0_i(:,i);
+    conj_x_0_i(2:4) = -conj_x_0_i(2:4);
+    z = [z hemi(hemi(x_0_i(:,i))*k_hat)*conj_x_0_i];
+    j = [j hemi(z(:,i))*x_0_i(:,end)];
+end
+
+
+
+
+
