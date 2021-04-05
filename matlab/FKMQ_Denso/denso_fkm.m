@@ -40,7 +40,27 @@ end
 
 x_0_i = x(:,1);
 
-for i = 2:6
+x_0_i = [x_0_i [(2^(1/2)*cos(theta1/2 + theta2/2 + pi/4))/2;
+                (2^(1/2)*cos(theta1/2 - theta2/2 - pi/4))/2;
+                (2^(1/2)*sin(theta1/2 - theta2/2 - pi/4))/2;
+                (2^(1/2)*sin(theta1/2 + theta2/2 + pi/4))/2]];
+
+x_0_i = [x_0_i [(cos(-theta1/2 + theta2/2 + theta3/2) + cos(theta1/2 + theta2/2 + theta3/2))/2;
+                (cos(-theta1/2 + theta2/2 + theta3/2) - cos(theta1/2 + theta2/2 + theta3/2))/2;
+               -(sin(-theta1/2 + theta2/2 + theta3/2) + sin(theta1/2 + theta2/2 + theta3/2))/2;
+               (-sin(-theta1/2 + theta2/2 + theta3/2) + sin(theta1/2 + theta2/2 + theta3/2))/2]];
+
+x_0_i = [x_0_i [(2^(1/2)*(cos(theta1/2 + theta2/2 + theta3/2)*cos(theta4/2) + sin(-theta1/2 + theta2/2 + theta3/2)*sin(theta4/2)))/2;
+                (2^(1/2)*(cos(-theta1/2 + theta2/2 + theta3/2)*cos(theta4/2) - sin(theta1/2 + theta2/2 + theta3/2)*sin(theta4/2)))/2;
+                (2^(1/2)*(cos(theta1/2 + theta2/2 + theta3/2)*sin(theta4/2) - sin(-theta1/2 + theta2/2 + theta3/2)*cos(theta4/2)))/2;
+                (2^(1/2)*(cos(-theta1/2 + theta2/2 + theta3/2)*sin(theta4/2) + sin(theta1/2 + theta2/2 + theta3/2)*cos(theta4/2)))/2]];
+
+x_0_i = [x_0_i [(cos(theta1/2+theta2/2+theta3/2)*cos(theta5/2-theta4/2) + cos(-theta1/2+theta2/2+theta3/2)*cos(theta5/2+theta4/2) - sin(theta1/2+theta2/2+theta3/2)*sin(theta5/2+theta4/2) - sin(-theta1/2+theta2/2+theta3/2)*sin(theta5/2-theta4/2))/2;
+                ()/2;
+                ()/2;
+                ()/2]];
+
+for i = 5:6
     x_0_i = [x_0_i hemi(x_0_i(:,i-1))*x(:,i)];
 end
 
