@@ -2,6 +2,8 @@ syms theta1 theta2 theta3 theta4 theta5 theta6
 
 thetas = [theta1 theta2 theta3 theta4 theta5 theta6];
 
+% thetas = [pi/4 pi/4 pi/4 pi/4 pi/4 pi/4];
+
 denso_DH_theta=  [0,pi/2,-pi/2,0,0,0];
 denso_DH_d =     [0.125,0,0,0.210,0,0.070];
 denso_DH_a =     [0,0.210, -0.075, 0, 0,0];
@@ -40,27 +42,7 @@ end
 
 x_0_i = x(:,1);
 
-x_0_i = [x_0_i [(2^(1/2)*cos(theta1/2 + theta2/2 + pi/4))/2;
-                (2^(1/2)*cos(theta1/2 - theta2/2 - pi/4))/2;
-                (2^(1/2)*sin(theta1/2 - theta2/2 - pi/4))/2;
-                (2^(1/2)*sin(theta1/2 + theta2/2 + pi/4))/2]];
-
-x_0_i = [x_0_i [(cos(-theta1/2 + theta2/2 + theta3/2) + cos(theta1/2 + theta2/2 + theta3/2))/2;
-                (cos(-theta1/2 + theta2/2 + theta3/2) - cos(theta1/2 + theta2/2 + theta3/2))/2;
-               -(sin(-theta1/2 + theta2/2 + theta3/2) + sin(theta1/2 + theta2/2 + theta3/2))/2;
-               (-sin(-theta1/2 + theta2/2 + theta3/2) + sin(theta1/2 + theta2/2 + theta3/2))/2]];
-
-x_0_i = [x_0_i [(2^(1/2)*(cos(theta1/2 + theta2/2 + theta3/2)*cos(theta4/2) + sin(-theta1/2 + theta2/2 + theta3/2)*sin(theta4/2)))/2;
-                (2^(1/2)*(cos(-theta1/2 + theta2/2 + theta3/2)*cos(theta4/2) - sin(theta1/2 + theta2/2 + theta3/2)*sin(theta4/2)))/2;
-                (2^(1/2)*(cos(theta1/2 + theta2/2 + theta3/2)*sin(theta4/2) - sin(-theta1/2 + theta2/2 + theta3/2)*cos(theta4/2)))/2;
-                (2^(1/2)*(cos(-theta1/2 + theta2/2 + theta3/2)*sin(theta4/2) + sin(theta1/2 + theta2/2 + theta3/2)*cos(theta4/2)))/2]];
-
-x_0_i = [x_0_i [(cos(theta1/2+theta2/2+theta3/2)*cos(theta5/2-theta4/2) + cos(-theta1/2+theta2/2+theta3/2)*cos(theta5/2+theta4/2) - sin(theta1/2+theta2/2+theta3/2)*sin(theta5/2+theta4/2) - sin(-theta1/2+theta2/2+theta3/2)*sin(theta5/2-theta4/2))/2;
-                ()/2;
-                ()/2;
-                ()/2]];
-
-for i = 5:6
+for i = 2:6
     x_0_i = [x_0_i hemi(x_0_i(:,i-1))*x(:,i)];
 end
 
@@ -72,17 +54,28 @@ end
 % x_0_6 = hemi(x_0_5)*x(:,6);
 
 z = [];
-j = [];
+J = [];
 k_hat = [0;0;0;1];
 
-for i = 1:6
+conj_x_0_i = [1; 0; 0; 0];
+conj_x_0_i(2:4) = -conj_x_0_i(2:4);
+z = [z hemi(hemi([1; 0; 0; 0])*k_hat)*conj_x_0_i/2];
+J = [J hemi(z)*x_0_i(:,end)];
+
+for i = 1:5
     conj_x_0_i = x_0_i(:,i);
     conj_x_0_i(2:4) = -conj_x_0_i(2:4);
-    z = [z hemi(hemi(x_0_i(:,i))*k_hat)*conj_x_0_i];
-    j = [j hemi(z(:,i))*x_0_i(:,end)];
+    z = [z hemi(hemi(x_0_i(:,i))*k_hat)*conj_x_0_i/2];
+    J = [J hemi(z(:,end))*x_0_i(:,end)];
 end
 
+% for i = 1:4
+%     for j = 1:6
+%         J(i, j) = simplify(J(i, j));
+%     end
+% end
 
+J = simplify(J)
 
 
 
