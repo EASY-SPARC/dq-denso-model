@@ -112,5 +112,5 @@ J = [J_p1 J_p2 J_p3 J_p4 J_p5 J_p6; J];
 % digits(5);
 % J = [vpa(J_g, 4);J];
 
-
+% teste = subs(J, {theta1, theta2, theta3, theta4, theta5, theta6}, {0,0,0,0,0,0})
 
