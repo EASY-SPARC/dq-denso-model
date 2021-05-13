@@ -1,5 +1,5 @@
-nx = 14;
-ny = 14;
+nx = 13;
+ny = 13;
 nu = 6;
 nlobj = nlmpc(nx,ny,nu);
 
@@ -17,7 +17,7 @@ nlobj.Model.IsContinuousTime = true;
 nlobj.Jacobian.StateFcn = "densoJacobianFunction";
 
 %% Model Weights
-nlobj.Weights.OutputVariables = [ones(1, 8), zeros(1, 6)];
+nlobj.Weights.OutputVariables = [ones(1, 3), 1.3*ones(1, 4), zeros(1, 6)];
 nlobj.Weights.ManipulatedVariablesRate = [0*ones(1, 6)];
 
 %% Constraints
@@ -36,10 +36,30 @@ denso = DQ_DENSO;
 
 theta = [0, 0, 0, 0, 0, 0]';
 xm = denso.fkm(theta);
-x0 = [vec8(xm); theta];
+pm = vec4(xm.translation);
+pm = pm(2:end);
+rm = xm.P;
+x0 = [pm; vec4(rm); theta];
 u0 = [0, 0, 0, 0, 0, 0]';
 
-validateFcns(nlobj,x0,u0);
+% validateFcns(nlobj,x0,u0);
+
+%% Setpoint
+position = [0.1, -0.1, 0.4];
+phi = pi;
+
+n_vec = [0, 1, 0];
+
+% We need to ensure unit vector
+n_vec = n_vec/norm(n_vec);
+
+n = DQ([0, n_vec(1), n_vec(2), n_vec(3)]);
+
+rd = cos(phi/2) + sin(phi/2)*n;
+
+pd = [position(1), position(2), position(3)]';
+
+xd = [pd; vec4(rd)];
 
 %% Computing Setpoint Trajectory
 
@@ -66,20 +86,31 @@ pose(:,20) = [-0.34452860265707586, -0.6969759835160262, -0.1302759184915906, -2
 pose(:,21) = [-0.3626616870074483, -0.7336589300168697, -0.13713254578062167, -2.651093208595259, 0.8489441442365172, 2.7717258724664227]';
 
 setting_time = (length(pose)-1)*Ts;
-setpoint = zeros(14, length(pose));
+setpoint = zeros(13, length(pose));
 
 for itter_pose = 1:length(pose)
-   setpoint(1:8,itter_pose) = vec8(denso.fkm(pose(:,itter_pose)));
+   pose_fkm = denso.fkm(pose(:,itter_pose));
+   
+   pose_pm = vec4(pose_fkm.translation);
+   setpoint(1:3,itter_pose) = pose_pm(2:end);
+   
+   setpoint(4:7,itter_pose) = vec4(pose_fkm.P);
 end
+
+% for k = 1:setting_time/Ts
+%     setpoint(:, k) = [trajectory_pos(pm, pd, k/(setting_time/Ts)); vec4(trajectory(rm, rd, k/(setting_time/Ts))); zeros(6, 1)];% theta contribution will be irrelevant because of zero weights
+% %     setpoint(:, k) = [xd; zeros(6, 1)];
+% end
 
 for k = 1:nlobj.PredictionHorizon*2
     setpoint(:, length(pose) + k) = setpoint(:, length(pose));
+%     setpoint(:, setting_time/Ts + k) = [xd; zeros(6, 1)];
 end
 
 %% Closed loop control law
 
 x = x0;
-data = [vec8(xm)', theta'];
+data = [pm', vec4(rm)', theta'];
 
 dtheta = zeros(6, 1);
 
@@ -105,8 +136,11 @@ while (k <= setting_time/Ts)
     storage_thetas = [storage_thetas theta];
     
     xm = denso.fkm(theta);
+    pm = vec4(xm.translation);
+    pm = pm(2:end);
+    rm = xm.P;
     
-    x = [vec8(xm); theta];
+    x = [pm; vec4(rm); theta];
     
     plot(denso, theta');
     drawnow;
@@ -134,13 +168,60 @@ end
 % setpoint = [x0 setpoint];
 drawnow;
 
+% subplot(3, 2, 1);
+% plot(t, storage_thetas(1, :));
+% hold on
+% plot(t, pose(1, :));
+% xlabel("t(s)");
+% legend('x_{m_1}', 'x_{d_1}');
+% hold off
+% 
+% subplot(3, 2, 2);
+% plot(t, storage_thetas(2, :));
+% hold on
+% plot(t, pose(2, :));
+% xlabel("t(s)");
+% legend('x_{m_1}', 'x_{d_1}');
+% hold off
+% 
+% subplot(3, 2, 3);
+% plot(t, storage_thetas(3, :));
+% hold on
+% plot(t, pose(3, :));
+% xlabel("t(s)");
+% legend('x_{m_1}', 'x_{d_1}');
+% hold off
+% 
+% subplot(3, 2, 4);
+% plot(t, storage_thetas(4, :));
+% hold on
+% plot(t, pose(4, :));
+% xlabel("t(s)");
+% legend('x_{m_1}', 'x_{d_1}');
+% hold off
+% 
+% subplot(3, 2, 5);
+% plot(t, storage_thetas(5, :));
+% hold on
+% plot(t, pose(5, :));
+% xlabel("t(s)");
+% legend('x_{m_1}', 'x_{d_1}');
+% hold off
+% 
+% subplot(3, 2, 6);
+% plot(t, storage_thetas(6, :));
+% hold on
+% plot(t, pose(6, :));
+% xlabel("t(s)");
+% legend('x_{m_1}', 'x_{d_1}');
+% hold off
+
 subplot(4, 2, 1);
 plot(t, data(:, 1));
 hold on
 plot(t, setpoint(1, :));
 xlabel("t(s)");
 legend('x_{m_1}', 'x_{d_1}');
-xlim([0, t(end)]);
 hold off
 
 subplot(4, 2, 2);
@@ -149,8 +230,6 @@ hold on
 plot(t, setpoint(2, :));
 xlabel("t(s)");
 legend('x_{m_2}', 'x_{d_2}');
-xlim([0, t(end)]);
-ylim([-.005, .005]);
 hold off
 
 subplot(4, 2, 3);
@@ -159,8 +238,6 @@ hold on
 plot(t, setpoint(3, :));
 xlabel("t(s)");
 legend('x_{m_3}', 'x_{d_3}');
-xlim([0, t(end)]);
-ylim([-2, 2]);
 hold off
 
 subplot(4, 2, 4);
@@ -169,8 +246,6 @@ hold on
 plot(t, setpoint(4, :));
 xlabel("t(s)");
 legend('x_{m_4}', 'x_{d_4}');
-xlim([0, t(end)]);
-ylim([-.005, .005]);
 hold off
 
 subplot(4, 2, 5);
@@ -179,8 +254,6 @@ hold on
 plot(t, setpoint(5, :));
 xlabel("t(s)");
 legend('x_{m_5}', 'x_{d_5}');
-xlim([0, t(end)]);
-ylim([-.005, .005]);
 hold off
 
 subplot(4, 2, 6);
@@ -189,7 +262,6 @@ hold on
 plot(t, setpoint(6, :));
 xlabel("t(s)");
 legend('x_{m_6}', 'x_{d_6}');
-xlim([0, t(end)]);
 hold off
 
 subplot(4, 2, 7);
@@ -198,15 +270,4 @@ hold on
 plot(t, setpoint(7, :));
 xlabel("t(s)");
 legend('x_{m_7}', 'x_{d_7}');
-xlim([0, t(end)]);
-ylim([-.005, .005]);
-hold off
-
-subplot(4, 2, 8);
-plot(t, data(:, 8));
-hold on
-plot(t, setpoint(8, :));
-xlabel("t(s)");
-legend('x_{m_8}', 'x_{d_8}');
-xlim([0, t(end)]);
 hold off

@@ -1,4 +1,4 @@
-function H = hemi(u)
+function H = hemi4plus(u)
 %TESTE Summary of this function goes here
 %   Detailed explanation goes here
 H = u(1)*eye(4);
