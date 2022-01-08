@@ -1,12 +1,11 @@
-nx = 14;
-ny = 14;
-nu = 6;
+function [trajectory] = nlmpc_trajectory(nx, ny, nu, setting_time, p, c, robot, position)
+%NLMPC_TRAJECTORY Summary of this function goes here
+%   Detailed explanation goes here
+
 nlobj = nlmpc(nx,ny,nu);
 
 %% MPC Parameters
-Ts = .1;
-p = 10;
-c = 10;
+Ts = setting_time/p;
 
 nlobj.Ts = Ts;
 nlobj.PredictionHorizon = p;
@@ -19,7 +18,7 @@ nlobj.Jacobian.StateFcn = "densoJacobianFunction";
 
 %% Model Weights
 nlobj.Weights.OutputVariables = [ones(1, 8), zeros(1, 6)];
-nlobj.Weights.ManipulatedVariablesRate = [0*ones(1, 6)];
+nlobj.Weights.ManipulatedVariablesRate = [0.2*ones(1, 6)];
 
 %% Constraints
 for ct = 1:nu
@@ -32,11 +31,11 @@ for ct = 8:ny
     nlobj.OV(ct).Max =  pi;
 end
 
-%% Denso definition, by DQ Robotics
-denso = DQ_DENSO;
+%% Robot definition, by DQ Robotics
+robot = DQ_DENSO;
 
 theta = [0, 0, 0, 0, 0, 0]';
-xm = denso.fkm(theta);
+xm = robot.fkm(theta);
 x0 = [vec8(xm); theta];
 u0 = [0, 0, 0, 0, 0, 0]';
 
@@ -44,73 +43,43 @@ validateFcns(nlobj,x0,u0);
 
 %% Computing Setpoint Trajectory
 
-setpoint = nlmpc_trajectory(14,14,6,5,50,50,denso,[0.2,0,0.2])'
-setting_time = (length(setpoint)-1)*Ts;
+phi = pi;
+%phi = 0;
 
-for k = 1:nlobj.PredictionHorizon*2
-    setpoint(:, length(setpoint) + 1) = setpoint(:, length(setpoint));
-end
+n_vec = [0, 1, 0];
 
-%% Closed loop control law
+% We need to ensure unit vector
+n_vec = n_vec/norm(n_vec);
 
-x = x0;
-data = [vec8(xm)', theta'];
+n = DQ([0, n_vec(1), n_vec(2), n_vec(3)]);
+
+r = cos(phi/2) + sin(phi/2)*n;
+
+p = DQ([0, position(1), position(2), position(3)]);
+
+xd = r + 1/2 * DQ.E * p * r;
+
+setpoint = [vec8(xd); zeros(6, 1)];
 
 dtheta = zeros(6, 1);
-
-k = 1;
 
 mv = zeros(1,6);
 
 options = nlmpcmoveopt;
 
-% tic
-hbar = waitbar(0,'Simulation Progress');
+[mv, options, info] = nlmpcmove(nlobj, x0, dtheta, setpoint', [], options);
 
-storage_thetas = [theta];
-
-while (k <= setting_time/Ts)
-    
-    [mv, options, info] = nlmpcmove(nlobj, x, dtheta, setpoint(:, k+1:k+nlobj.PredictionHorizon)', [], options);
-    
-    
-    dtheta = info.MVopt(1,:)';
-    theta = theta + dtheta * Ts;
-    
-    storage_thetas = [storage_thetas theta];
-    
-    xm = denso.fkm(theta);
-    
-    x = [vec8(xm); theta];
-    
-    plot(denso, theta');
-    drawnow;
-    
-    k = k+1;
-    
-    data = [data; x'];
-    
-    waitbar(k/(setting_time/Ts), hbar);
+for k = 1:nlobj.PredictionHorizon
+    setpoint(:, 1 + k) = setpoint(:, 1);
 end
 
-close(hbar);
-% timeElapsed = toc
-%% Plotting performance
-t = 0:Ts:(k-1)*Ts;
+trajectory = info.Xopt
+t = [0:Ts:setting_time]
 
-if k < size(setpoint, 2)
-    setpoint = setpoint(:, 1:k);
-elseif k > size(setpoint, 2)
-    for i = 1:k-size(setpoint, 2)
-        setpoint(:, i) = setpoint(:, end);
-    end
-end
-
-% setpoint = [x0 setpoint];
-drawnow;
+%% Plot Trajectory
 
 subplot(4, 2, 1);
-plot(t, data(:, 1));
+plot(t, trajectory(:, 1));
 hold on
 plot(t, setpoint(1, :));
 xlabel("t(s)");
@@ -119,7 +88,7 @@ xlim([0, t(end)]);
 hold off
 
 subplot(4, 2, 2);
-plot(t, data(:, 2));
+plot(t, trajectory(:, 2));
 hold on
 plot(t, setpoint(2, :));
 xlabel("t(s)");
@@ -129,7 +98,7 @@ ylim([-.005, .005]);
 hold off
 
 subplot(4, 2, 3);
-plot(t, data(:, 3));
+plot(t, trajectory(:, 3));
 hold on
 plot(t, setpoint(3, :));
 xlabel("t(s)");
@@ -139,7 +108,7 @@ ylim([-2, 2]);
 hold off
 
 subplot(4, 2, 4);
-plot(t, data(:, 4));
+plot(t, trajectory(:, 4));
 hold on
 plot(t, setpoint(4, :));
 xlabel("t(s)");
@@ -149,7 +118,7 @@ ylim([-.005, .005]);
 hold off
 
 subplot(4, 2, 5);
-plot(t, data(:, 5));
+plot(t, trajectory(:, 5));
 hold on
 plot(t, setpoint(5, :));
 xlabel("t(s)");
@@ -159,7 +128,7 @@ ylim([-.005, .005]);
 hold off
 
 subplot(4, 2, 6);
-plot(t, data(:, 6));
+plot(t, trajectory(:, 6));
 hold on
 plot(t, setpoint(6, :));
 xlabel("t(s)");
@@ -168,7 +137,7 @@ xlim([0, t(end)]);
 hold off
 
 subplot(4, 2, 7);
-plot(t, data(:, 7));
+plot(t, trajectory(:, 7));
 hold on
 plot(t, setpoint(7, :));
 xlabel("t(s)");
@@ -178,10 +147,13 @@ ylim([-.005, .005]);
 hold off
 
 subplot(4, 2, 8);
-plot(t, data(:, 8));
+plot(t, trajectory(:, 8));
 hold on
 plot(t, setpoint(8, :));
 xlabel("t(s)");
 legend('x_{m_8}', 'x_{d_8}');
 xlim([0, t(end)]);
 hold off
+
+end
+
