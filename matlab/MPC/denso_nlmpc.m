@@ -7,6 +7,7 @@ nlobj = nlmpc(nx,ny,nu);
 Ts = .1;
 p = 10;
 c = 10;
+setting_time = 5;
 
 nlobj.Ts = Ts;
 nlobj.PredictionHorizon = p;
@@ -18,8 +19,9 @@ nlobj.Model.IsContinuousTime = true;
 nlobj.Jacobian.StateFcn = "densoJacobianFunction";
 
 %% Model Weights
-nlobj.Weights.OutputVariables = [ones(1, 8), zeros(1, 6)];
-nlobj.Weights.ManipulatedVariablesRate = [0*ones(1, 6)];
+nlobj.Weights.ManipulatedVariables = [zeros(1, 6)];
+nlobj.Weights.OutputVariables = [10*ones(1, 8), zeros(1, 6)];
+nlobj.Weights.ManipulatedVariablesRate = [ones(1, 6)];
 
 %% Constraints
 for ct = 1:nu
@@ -43,32 +45,27 @@ u0 = [0, 0, 0, 0, 0, 0]';
 validateFcns(nlobj,x0,u0);
 
 %% Computing Setpoint Trajectory
-
-setpoint = nlmpc_trajectory(14,14,6,5,50,50,denso,[0.2,0,0.2])'
-setting_time = (length(setpoint)-1)*Ts;
+trajectory_length = setting_time/Ts;
+setpoint = nlmpc_trajectory(14,14,6,setting_time,trajectory_length,trajectory_length,denso,[0.2,0,0.2])';
 
 for k = 1:nlobj.PredictionHorizon*2
     setpoint(:, length(setpoint) + 1) = setpoint(:, length(setpoint));
 end
 
 %% Closed loop control law
-
 x = x0;
-data = [vec8(xm)', theta'];
-
+data = zeros(14, trajectory_length);
+mv_data = zeros(6, trajectory_length);
 dtheta = zeros(6, 1);
-
-k = 1;
-
 mv = zeros(1,6);
 
 options = nlmpcmoveopt;
 
-% tic
+tic;
 hbar = waitbar(0,'Simulation Progress');
+robot_plot = figure('Name', 'Robot Plot');
 
-storage_thetas = [theta];
-
+k = 1;
 while (k <= setting_time/Ts)
     
     [mv, options, info] = nlmpcmove(nlobj, x, dtheta, setpoint(:, k+1:k+nlobj.PredictionHorizon)', [], options);
@@ -77,8 +74,6 @@ while (k <= setting_time/Ts)
     dtheta = info.MVopt(1,:)';
     theta = theta + dtheta * Ts;
     
-    storage_thetas = [storage_thetas theta];
-    
     xm = denso.fkm(theta);
     
     x = [vec8(xm); theta];
@@ -86,15 +81,18 @@ while (k <= setting_time/Ts)
     plot(denso, theta');
     drawnow;
     
-    k = k+1;
-    
-    data = [data; x'];
+    data(:, k) = x;
+    mv_data(:, k) = dtheta';
     
     waitbar(k/(setting_time/Ts), hbar);
+    k = k+1;
 end
 
+timeElapsed = toc;
 close(hbar);
-% timeElapsed = toc
+data = [x0 data];
+mv_data = [zeros(6,1) mv_data];
+
 %% Plotting performance
 t = 0:Ts:(k-1)*Ts;
 
@@ -106,11 +104,13 @@ elseif k > size(setpoint, 2)
     end
 end
 
-% setpoint = [x0 setpoint];
 drawnow;
 
+%% Trajectory Following Performance
+output_results = figure('Name', 'Trajectory Following');
+
 subplot(4, 2, 1);
-plot(t, data(:, 1));
+plot(t, data(1, :));
 hold on
 plot(t, setpoint(1, :));
 xlabel("t(s)");
@@ -119,7 +119,7 @@ xlim([0, t(end)]);
 hold off
 
 subplot(4, 2, 2);
-plot(t, data(:, 2));
+plot(t, data(2, :));
 hold on
 plot(t, setpoint(2, :));
 xlabel("t(s)");
@@ -129,7 +129,7 @@ ylim([-.005, .005]);
 hold off
 
 subplot(4, 2, 3);
-plot(t, data(:, 3));
+plot(t, data(3, :));
 hold on
 plot(t, setpoint(3, :));
 xlabel("t(s)");
@@ -139,7 +139,7 @@ ylim([-2, 2]);
 hold off
 
 subplot(4, 2, 4);
-plot(t, data(:, 4));
+plot(t, data(4, :));
 hold on
 plot(t, setpoint(4, :));
 xlabel("t(s)");
@@ -149,7 +149,7 @@ ylim([-.005, .005]);
 hold off
 
 subplot(4, 2, 5);
-plot(t, data(:, 5));
+plot(t, data(5, :));
 hold on
 plot(t, setpoint(5, :));
 xlabel("t(s)");
@@ -159,7 +159,7 @@ ylim([-.005, .005]);
 hold off
 
 subplot(4, 2, 6);
-plot(t, data(:, 6));
+plot(t, data(6, :));
 hold on
 plot(t, setpoint(6, :));
 xlabel("t(s)");
@@ -168,7 +168,7 @@ xlim([0, t(end)]);
 hold off
 
 subplot(4, 2, 7);
-plot(t, data(:, 7));
+plot(t, data(7, :));
 hold on
 plot(t, setpoint(7, :));
 xlabel("t(s)");
@@ -178,10 +178,49 @@ ylim([-.005, .005]);
 hold off
 
 subplot(4, 2, 8);
-plot(t, data(:, 8));
+plot(t, data(8, :));
 hold on
 plot(t, setpoint(8, :));
 xlabel("t(s)");
 legend('x_{m_8}', 'x_{d_8}');
 xlim([0, t(end)]);
 hold off
+
+%% Manipulated Variables Behaviour
+mv_results = figure('Name', 'Manipulated Variables');
+
+subplot(3, 2, 1);
+plot(t, mv_data(1, :));
+xlabel("t(s)");
+legend('dx_{m_9}');
+xlim([0, t(end)]);
+
+subplot(3, 2, 2);
+plot(t, mv_data(2, :));
+xlabel("t(s)");
+legend('dx_{m_10}');
+xlim([0, t(end)]);
+
+subplot(3, 2, 3);
+plot(t, mv_data(3, :));
+xlabel("t(s)");
+legend('dx_{m_11}');
+xlim([0, t(end)]);
+
+subplot(3, 2, 4);
+plot(t, mv_data(4, :));
+xlabel("t(s)");
+legend('dx_{m_12}');
+xlim([0, t(end)]);
+
+subplot(3, 2, 5);
+plot(t, mv_data(5, :));
+xlabel("t(s)");
+legend('dx_{m_13}');
+xlim([0, t(end)]);
+
+subplot(3, 2, 6);
+plot(t, mv_data(6, :));
+xlabel("t(s)");
+legend('dx_{m_14}');
+xlim([0, t(end)]);

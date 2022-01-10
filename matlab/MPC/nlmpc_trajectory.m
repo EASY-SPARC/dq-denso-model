@@ -73,10 +73,12 @@ for k = 1:nlobj.PredictionHorizon
     setpoint(:, 1 + k) = setpoint(:, 1);
 end
 
-trajectory = info.Xopt
-t = [0:Ts:setting_time]
+trajectory = info.Xopt;
+t = [0:Ts:setting_time];
 
 %% Plot Trajectory
+
+trajectory_fig = figure('Name', 'MPC Generated Trajectory')
 
 subplot(4, 2, 1);
 plot(t, trajectory(:, 1));
