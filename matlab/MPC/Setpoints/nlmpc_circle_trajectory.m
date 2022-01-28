@@ -8,8 +8,8 @@ nlobj = nlmpc(nx,ny,nu);
 Ts = setting_time/p;
 
 nlobj.Ts = Ts;
-nlobj.PredictionHorizon = p;
-nlobj.ControlHorizon = c;
+nlobj.PredictionHorizon = p/10;
+nlobj.ControlHorizon = c/10;
 
 %% Model Functions
 nlobj.Model.StateFcn = "densoStateFunction";
@@ -17,8 +17,8 @@ nlobj.Model.IsContinuousTime = true;
 nlobj.Jacobian.StateFcn = "densoJacobianFunction";
 
 %% Model Weights
-nlobj.Weights.OutputVariables = [10*ones(1, 8), zeros(1, 6)];
-nlobj.Weights.ManipulatedVariablesRate = [0.2*ones(1, 6)];
+nlobj.Weights.OutputVariables = [10, 100, 10, 100, 200, 200, 10, 50, zeros(1, 6)];
+nlobj.Weights.ManipulatedVariablesRate = [ones(1, 6)];
 
 %% Constraints
 for ct = 1:nu
@@ -43,7 +43,7 @@ validateFcns(nlobj,x0,u0);
 
 %% Computing Setpoint Trajectory
 
-[x_circle, y_circle, z_circle] = nlmpc_circle_path(center,r,0,setting_time,Ts,0,2*pi);
+[x_circle, y_circle, z_circle] = nlmpc_circle_path(center,r,0,setting_time,Ts,0,4*pi);
 [setpoint, vecxd] = path_to_dq([x_circle, y_circle, z_circle]);
 
 dtheta = zeros(6, 1);
@@ -52,14 +52,20 @@ mv = zeros(1,6);
 
 options = nlmpcmoveopt;
 
-[mv, options, info] = nlmpcmove(nlobj, x0, dtheta, setpoint', [], options);
-
-trajectory = info.Xopt;
+trajectory = zeros(p+1, nx);
+for k = 1:10
+    [mv, options, info] = nlmpcmove(nlobj, x0, dtheta, setpoint(:, 10*(k-1)+1:10*k)', [], options);
+    x0 = info.Xopt(end, :);
+    dtheta = info.MVopt(end,:)';
+    trajectory(10*(k-1)+1:10*k, :) = info.Xopt(1:end-1,:);
+end
+trajectory(end,:) = info.Xopt(end,:);
+    
 t = [0:Ts:setting_time];
 
 %% Plot Trajectory
 
-trajectory_fig = figure('Name', 'MPC Generated Trajectory')
+trajectory_fig = figure('Name', 'MPC Generated Trajectory');
 
 subplot(4, 2, 1);
 plot(t, trajectory(:, 1));

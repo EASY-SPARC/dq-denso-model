@@ -7,7 +7,7 @@ nlobj = nlmpc(nx,ny,nu);
 Ts = .1;
 p = 10;
 c = 10;
-setting_time = 5;
+setting_time = 10;
 
 nlobj.Ts = Ts;
 nlobj.PredictionHorizon = p;
@@ -20,7 +20,7 @@ nlobj.Jacobian.StateFcn = "densoJacobianFunction";
 
 %% Model Weights
 nlobj.Weights.ManipulatedVariables = [zeros(1, 6)];
-nlobj.Weights.OutputVariables = [10*ones(1, 8), zeros(1, 6)];
+nlobj.Weights.OutputVariables = [10*ones(1, 4), 30*ones(1, 2), 10*ones(1, 2), zeros(1, 6)];
 nlobj.Weights.ManipulatedVariablesRate = [ones(1, 6)];
 
 %% Constraints
@@ -79,13 +79,16 @@ while (k <= setting_time/Ts)
     
     x = [vec8(xm); theta];
     
-    hold on;
     for iterator = 1:length(vecxd)
         plot(vecxd(iterator));
+        hold on;
     end
     
+    view(90,360);
     plot(denso, theta');
     drawnow;
+    
+    hold off;
     
     data(:, k) = x;
     mv_data(:, k) = dtheta';
