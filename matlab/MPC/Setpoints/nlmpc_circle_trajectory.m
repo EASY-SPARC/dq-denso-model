@@ -1,4 +1,4 @@
-function [trajectory, vecxd] = nlmpc_trajectory(nx, ny, nu, setting_time, p, c, robot, center, r)
+function [trajectory, vecxd] = nlmpc_trajectory(nx, ny, nu, setting_time, p, c, robot, center, r, phi)
 %NLMPC_TRAJECTORY Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -44,7 +44,7 @@ validateFcns(nlobj,x0,u0);
 %% Computing Setpoint Trajectory
 
 [x_circle, y_circle, z_circle] = nlmpc_circle_path(center,r,0,setting_time,Ts,0,4*pi);
-[setpoint, vecxd] = path_to_dq([x_circle, y_circle, z_circle]);
+[setpoint, vecxd] = path_to_dq([x_circle, y_circle, z_circle], phi);
 
 dtheta = zeros(6, 1);
 

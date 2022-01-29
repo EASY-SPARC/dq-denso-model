@@ -17,6 +17,7 @@ nlobj.Model.IsContinuousTime = true;
 nlobj.Jacobian.StateFcn = "densoJacobianFunction";
 
 %% Model Weights
+nlobj.Weights.ManipulatedVariables = [zeros(1, 6)];
 nlobj.Weights.OutputVariables = [ones(1, 8), zeros(1, 6)];
 nlobj.Weights.ManipulatedVariablesRate = [0.2*ones(1, 6)];
 
@@ -26,10 +27,30 @@ for ct = 1:nu
     nlobj.MV(ct).Max =  pi;
 end
 
-for ct = 8:ny
-    nlobj.OV(ct).Min = -pi;
-    nlobj.OV(ct).Max =  pi;
-end
+% for ct = 8:ny
+%     nlobj.OV(ct).Min = -pi;
+%     nlobj.OV(ct).Max =  pi;
+% end
+
+% Joint Position Constraints
+% 1
+nlobj.OV(9).Min =  -2.7925;     %-160 degrees
+nlobj.OV(9).Max =   2.7925; 	%160 degrees
+% 2
+nlobj.OV(10).Min = -2.0944;     %-120 degrees
+nlobj.OV(10).Max =  2.0944;     %120 degrees
+% 3
+nlobj.OV(11).Min =  -2.7925;    %-160 degrees
+nlobj.OV(11).Max =  -0.331613;	%-19 degrees
+% 4
+nlobj.OV(12).Min = -2.7925;     %-160 degrees
+nlobj.OV(12).Max =  2.7925;     %160 degrees
+% 5
+nlobj.OV(13).Min = -2.0944;     %-120 degrees
+nlobj.OV(13).Max =  2.0944;     %120 degrees
+% 6
+nlobj.OV(14).Min = -2*pi;
+nlobj.OV(14).Max =  2*pi;
 
 %% Robot definition, by DQ Robotics
 robot = DQ_DENSO;

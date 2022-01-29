@@ -1,4 +1,4 @@
-function [setpoint, vecxd] = path_to_dq(path)
+function [setpoint, vecxd] = path_to_dq(path, phi)
 %PATH_TO_DQ Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -10,7 +10,7 @@ z = path(:,3);
 steps = length(x);
 setpoint = zeros(14, steps);
 
-phi = pi/2;
+% phi = pi/2;
 n_vec = [0, 1, 0];
 
 % We need to ensure unit vector
