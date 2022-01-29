@@ -7,7 +7,7 @@ nlobj = nlmpc(nx,ny,nu);
 Ts = .1;
 p = 10;
 c = 10;
-setting_time = 5;
+setting_time = 10;
 
 nlobj.Ts = Ts;
 nlobj.PredictionHorizon = p;
@@ -20,7 +20,7 @@ nlobj.Jacobian.StateFcn = "densoJacobianFunction";
 
 %% Model Weights
 nlobj.Weights.ManipulatedVariables = [zeros(1, 6)];
-nlobj.Weights.OutputVariables = [10*ones(1, 8), zeros(1, 6)];
+nlobj.Weights.OutputVariables = [ones(1, 4), 10*ones(1, 2), 10*ones(1, 2), zeros(1, 6)];
 nlobj.Weights.ManipulatedVariablesRate = [ones(1, 6)];
 
 %% Constraints
@@ -28,11 +28,31 @@ for ct = 1:nu
     nlobj.MV(ct).Min = -pi;
     nlobj.MV(ct).Max =  pi;
 end
+ 
+% for ct = 9:ny
+%     nlobj.OV(ct).Min = -pi;
+%     nlobj.OV(ct).Max =  pi;
+% end
 
-for ct = 8:ny
-    nlobj.OV(ct).Min = -pi;
-    nlobj.OV(ct).Max =  pi;
-end
+% Joint Position Constraints
+% 1
+nlobj.OV(9).Min =  -2.7925;     %-160 degrees
+nlobj.OV(9).Max =   2.7925; 	%160 degrees
+% 2
+nlobj.OV(10).Min = -2.0944;     %-120 degrees
+nlobj.OV(10).Max =  2.0944;     %120 degrees
+% 3
+nlobj.OV(11).Min =  -2.7925;    %-160 degrees
+nlobj.OV(11).Max =  -0.331613;	%-19 degrees
+% 4
+nlobj.OV(12).Min = -2.7925;     %-160 degrees
+nlobj.OV(12).Max =  2.7925;     %160 degrees
+% 5
+nlobj.OV(13).Min = -2.0944;     %-120 degrees
+nlobj.OV(13).Max =  2.0944;     %120 degrees
+% 6
+nlobj.OV(14).Min = -2*pi;
+nlobj.OV(14).Max =  2*pi;
 
 %% Denso definition, by DQ Robotics
 denso = DQ_DENSO;
@@ -45,8 +65,10 @@ u0 = [0, 0, 0, 0, 0, 0]';
 validateFcns(nlobj,x0,u0);
 
 %% Computing Setpoint Trajectory
-trajectory_length = setting_time/Ts;
-setpoint = nlmpc_trajectory(14,14,6,setting_time,trajectory_length,trajectory_length,denso,[0.2,0,0.2])';
+% trajectory_length = setting_time/Ts;
+% setpoint = nlmpc_trajectory(14,14,6,setting_time,trajectory_length,trajectory_length,denso,[0.2,0,0.2])';
+path = [0.2*ones(setting_time/Ts, 1) zeros(setting_time/Ts, 1) 0.2*ones(setting_time/Ts, 1)];
+setpoint = path_to_dq(path, pi/2);
 
 for k = 1:nlobj.PredictionHorizon*2
     setpoint(:, length(setpoint) + 1) = setpoint(:, length(setpoint));
@@ -198,29 +220,29 @@ xlim([0, t(end)]);
 subplot(3, 2, 2);
 plot(t, mv_data(2, :));
 xlabel("t(s)");
-legend('dx_{m_10}');
+legend('dx_{m_{10}}');
 xlim([0, t(end)]);
 
 subplot(3, 2, 3);
 plot(t, mv_data(3, :));
 xlabel("t(s)");
-legend('dx_{m_11}');
+legend('dx_{m_{11}}');
 xlim([0, t(end)]);
 
 subplot(3, 2, 4);
 plot(t, mv_data(4, :));
 xlabel("t(s)");
-legend('dx_{m_12}');
+legend('dx_{m_{12}}');
 xlim([0, t(end)]);
 
 subplot(3, 2, 5);
 plot(t, mv_data(5, :));
 xlabel("t(s)");
-legend('dx_{m_13}');
+legend('dx_{m_{13}}');
 xlim([0, t(end)]);
 
 subplot(3, 2, 6);
 plot(t, mv_data(6, :));
 xlabel("t(s)");
-legend('dx_{m_14}');
+legend('dx_{m_{14}}');
 xlim([0, t(end)]);

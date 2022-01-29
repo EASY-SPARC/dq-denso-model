@@ -29,10 +29,30 @@ for ct = 1:nu
     nlobj.MV(ct).Max =  pi;
 end
 
-for ct = 8:ny
-    nlobj.OV(ct).Min = -pi;
-    nlobj.OV(ct).Max =  pi;
-end
+% for ct = 9:ny
+%     nlobj.OV(ct).Min = -pi;
+%     nlobj.OV(ct).Max =  pi;
+% end
+
+% Joint Position Constraints
+% 1
+nlobj.OV(9).Min =  -2.7925;     %-160 degrees
+nlobj.OV(9).Max =   2.7925; 	%160 degrees
+% 2
+nlobj.OV(10).Min = -2.0944;     %-120 degrees
+nlobj.OV(10).Max =  2.0944;     %120 degrees
+% 3
+nlobj.OV(11).Min =  -2.7925;    %-160 degrees
+nlobj.OV(11).Max =  -0.331613;	%-19 degrees
+% 4
+nlobj.OV(12).Min = -2.7925;     %-160 degrees
+nlobj.OV(12).Max =  2.7925;     %160 degrees
+% 5
+nlobj.OV(13).Min = -2.0944;     %-120 degrees
+nlobj.OV(13).Max =  2.0944;     %120 degrees
+% 6
+nlobj.OV(14).Min = -2*pi;
+nlobj.OV(14).Max =  2*pi;
 
 %% Denso definition, by DQ Robotics
 denso = DQ_DENSO;
@@ -45,9 +65,11 @@ u0 = [0, 0, 0, 0, 0, 0]';
 validateFcns(nlobj,x0,u0);
 
 %% Computing Setpoint Trajectory
-trajectory_length = setting_time/Ts;
-[setpoint, vecxd] = nlmpc_circle_trajectory(14,14,6,setting_time,trajectory_length,trajectory_length,denso,[0.3,0,0.3],0.05);
-setpoint = setpoint';
+% trajectory_length = setting_time/Ts;
+% [setpoint, vecxd] = nlmpc_circle_trajectory(14,14,6,setting_time,trajectory_length,trajectory_length,denso,[0.3,0,0.3],0.05, pi/2);
+% setpoint = setpoint';
+[x_circle, y_circle, z_circle] = nlmpc_circle_path([0.3,0,0.3],0.05,0,setting_time,Ts,0,4*pi);
+[setpoint, vecxd] = path_to_dq([x_circle, y_circle, z_circle], pi/2);
 
 for k = 1:nlobj.PredictionHorizon*2
     setpoint(:, length(setpoint) + 1) = setpoint(:, length(setpoint));
